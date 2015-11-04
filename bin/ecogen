@@ -1,0 +1,50 @@
+our %ECOS     = p6c => 'git@github.com:perl6/ecosystem.git';
+our $DIR      = $*HOME.child('.ecogen') andthen try { mkdir($DIR) unless $DIR.IO.d }
+our $GIT_CMD  = 'git';
+
+multi MAIN('update', Bool :$quiet) {
+    my %projects;
+
+    for %ECOS.kv -> $econame, $ecouri {
+        say "*** Processing {$econame} [{$ecouri}]";
+        my $edir = $DIR.child($econame) andthen do { mkdir($edir) unless $edir.IO.e }
+        git-update-or-create($ecouri, $edir, 'META.list', :$quiet);
+        my @githubs = $edir.child('META.list', :chomp).IO.lines;
+
+        for @githubs -> $project-https-url {
+            say "*** Processing ecosystem list item: $project-https-url";
+            my $id = do with $project-https-url.match(/^ .* \/ (.*? \/.*?) \/master\/META6?\.[json|info] $/)[0] { ~$_ } // next;
+            my $meta6 = ~$project-https-url.match(/^ .* \/master\/ (META6?\.[json|info]) $/)[0];
+            my $name  = ~$id.match(/^ .* \/ (.*?) $/);
+            my $pdir  = $edir.child($id) andthen do { mkdir($pdir) unless $pdir.IO.e }
+            my $puri  = "git\@github.com:$id.git";
+            git-update-or-create($puri, $pdir, $meta6, :$quiet);
+
+            my $project-meta = from-json($pdir.child($meta6).IO.slurp);
+            %projects{$econame}.append($project-meta);
+        }
+    }
+
+    for %projects.kv -> $econame, $ecoprojects {
+        my $projects-file = $DIR.child("projects.{time}.json");
+        # we *could* just slurp in the text and concat with a ',' ...
+        my $meta-json-str = to-json($ecoprojects);
+        $projects-file.IO.spurt: $meta-json-str;
+        say "[new file] {$projects-file}";
+    }
+
+    run $GIT_CMD, 'push', 'origin', 'master', :cwd($DIR);
+}
+
+sub git-update-or-create($uri, $dir, $meta6, Bool :$quiet) {
+    my $get-type = $dir.child('.git').IO.e ?? 'fetch' !! 'clone';
+
+    my @get-cmd = $GIT_CMD, $get-type, '-n', '--depth=1';
+    @get-cmd.append('--quiet') if ?$quiet;
+    @get-cmd.append($uri) if $get-type eq 'clone';
+    my @checkout-cmd = $GIT_CMD, 'checkout', 'HEAD', $meta6;
+    @checkout-cmd.append('--quiet') if ?$quiet;
+
+    run |@get-cmd, $dir, :cwd($dir.IO.dirname);
+    run |@checkout-cmd, :cwd($dir);
+}
