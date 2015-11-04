@@ -2,9 +2,7 @@ our %ECOS     = p6c => 'git@github.com:perl6/ecosystem.git';
 our $DIR      = $*HOME.child('.ecogen') andthen try { mkdir($DIR) unless $DIR.IO.d }
 our $GIT_CMD  = 'git';
 
-multi MAIN('update', :$dir = $DIR, :$file = "projects.json", Bool :$quiet) {
-    my %projects;
-
+multi MAIN('update', :$dir = $DIR, :$repo, Bool :$quiet) {
     for %ECOS.kv -> $econame, $ecouri {
         say "*** Processing {$econame} [{$ecouri}]";
         say $dir.IO.child($econame);
@@ -12,7 +10,7 @@ multi MAIN('update', :$dir = $DIR, :$file = "projects.json", Bool :$quiet) {
         git-update-or-create($ecouri, $edir, 'META.list', :$quiet);
         my @githubs = $edir.child('META.list', :chomp).IO.lines;
 
-        for @githubs -> $project-https-url {
+        my @meta-files = gather for @githubs -> $project-https-url {
             say "*** Processing ecosystem list item: $project-https-url";
             my $id = do with $project-https-url.match(/^ .* \/ (.*? \/.*?) \/master\/META6?\.[json|info] $/)[0] { ~$_ } // next;
             my $meta6 = ~$project-https-url.match(/^ .* \/master\/ (META6?\.[json|info]) $/)[0];
@@ -20,24 +18,25 @@ multi MAIN('update', :$dir = $DIR, :$file = "projects.json", Bool :$quiet) {
             my $pdir  = $edir.child($id) andthen do { mkdir($pdir) unless $pdir.IO.e }
             my $puri  = "git\@github.com:$id.git";
             git-update-or-create($puri, $pdir, $meta6, :$quiet);
-
-            my $project-meta = from-json($pdir.child($meta6).IO.slurp);
-            %projects{$econame}.append($project-meta);
+            take $pdir.child($meta6);
         }
-    }
 
+        my $projects = @meta-files.map: {from-json(.IO.slurp)}
 
-    my @saved = eager gather for %projects.kv -> $econame, $ecoprojects {
-        take my $projects-file = $dir.IO.child($econame).child($file);
+        my $projects-file = $dir.IO.child("{$econame}.json");
         # we *could* just slurp in the text and concat with a ',' ...
-        my $meta-json-str = to-json($ecoprojects);
+        my $meta-json-str = to-json($projects);
         $projects-file.IO.spurt: $meta-json-str;
         say "[new file] {$projects-file}";
-    }
 
-    run $GIT_CMD, 'add', @saved, :cwd($dir);
-    run $GIT_CMD, 'commit', '-m', "ecosystem update: {time}", :cwd($dir);
-    run $GIT_CMD, 'push', 'origin', 'master', :cwd($dir);
+        git-push-ecosystem-update($projects-file, :$repo);
+    }
+}
+
+sub git-push-ecosystem-update($file, :$repo = 'origin') {
+    run $GIT_CMD, 'add', $file, :cwd($file.dirname);
+    run $GIT_CMD, 'commit', '-m', "ecosystem update: {time}", :cwd($file.dirname);
+    run $GIT_CMD, 'push', $repo, 'master', :cwd($file.dirname);
 }
 
 sub git-update-or-create($uri, $dir, $meta6, Bool :$quiet) {
