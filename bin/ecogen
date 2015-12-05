@@ -1,3 +1,7 @@
+#! perl6
+
+use v6;
+
 our %ECOS     = p6c => 'git@github.com:perl6/ecosystem.git';
 our $DIR      = $*HOME.child('.ecogen') andthen try { mkdir($DIR) unless $DIR.IO.d }
 our $GIT_CMD  = 'git';
