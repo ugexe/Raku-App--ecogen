@@ -22,7 +22,7 @@ multi MAIN('update', :$dir = $DIR, :$repo, Bool :$quiet) {
             take $pdir.child($meta6);
         }
 
-        my $projects = @meta-files.map: {from-json(.IO.slurp)}
+        my $projects = @meta-files.map({ try { from-json(.IO.slurp) } }).grep(*.so);
 
         my $projects-file = $dir.IO.child("{$econame}.json");
         my $meta-json-str = to-json($projects);
