@@ -1,5 +1,5 @@
 {
-    "perl"        : "v6.0.0",
+    "perl"        : "6.c",
     "name"        : "App::ecogen",
     "version"     : "*",
     "owner"       : "ugexe",
