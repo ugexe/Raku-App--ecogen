@@ -1,100 +1,22 @@
 #!/usr/bin/env perl6
 
-use App::ecogen;
 
-our %ECOS = p6c  => 'git@github.com:perl6/ecosystem.git',
-            cpan => 'http://www.cpan.org/authors/id/P/PS/PSIXDISTS/Perl6/';
-our $DIR     = $*HOME.child('.ecogen') andthen try { mkdir($DIR) unless $DIR.IO.d }
-our $GIT_CMD = 'git';
+multi MAIN(
+    'update',
+    :$local-uri  = $*HOME.child('.ecogen').absolute,
+    :$remote-uri = "git@github.com:ugexe/Perl6-ecosystems.git",
+    *@ecosystems ($, *@)
+) {
+    my $local-dir = $local-uri.IO;
+    try { mkdir($local-uri) unless $local-uri.e }
 
-multi MAIN('update', :$dir = $DIR, :$repo, Bool :$quiet) {
-    for %ECOS.kv -> $econame, $ecouri {
+    for @ecosystems -> $econame {
+        my $ecosystem-module = "App::ecogen::{$econame}";
+        next() R, note("Ecosystem [$ecosystem-module] could not be loaded") if (try require ::($ecosystem-module)) ~~ Nil;
 
-        my $edir = $dir.IO.child($econame) andthen do { mkdir($edir) unless $edir.IO.e }
-        my $projects-file = $dir.IO.child("{$econame}.json");
+        my $ecosystem = ::($ecosystem-module).new( :prefix($local-dir.child($econame)) );
 
-        if $ecouri.ends-with('.git') or $ecouri.starts-with('git://') or $ecouri.starts-with('git@') {
-            git-update-or-create($ecouri, $edir, 'META.list');
-            my @githubs = $edir.child('META.list', :chomp).IO.slurp.lines;
-
-            my @meta-files = gather for @githubs -> $project-https-url {
-                my $parts = $project-https-url.match(/^ (.*? ":\/\/" .*?) \/ (.*? \/.*?) "\/raw"? \/master\/(META6?\.[json|info]) $/);
-                say "No host found for: $project-https-url"         && next() unless $parts[0].?chars;
-                say "No project path found for: $project-https-url" && next() unless $parts[1].?chars;
-                say "No META6 found for: $project-https-url"        && next() unless $parts[2].?chars;
-                my $host  = git-mangle-host($parts[0]);
-                my $id    = $parts[1];
-                my $meta6 = $parts[2];
-                say '-----------------';
-                say "Project: {$id}";
-                say "Host: {$host}";
-                say "META6: {$meta6}";
-                my $name  = ~$id.match(/^ .* \/ (.*?) $/);
-                my $pdir  = $edir.child($id) andthen do { mkdir($pdir) unless $pdir.IO.e }
-                my $puri  = "$host/$id.git";
-                git-update-or-create($puri, $pdir, $meta6, :$quiet);
-                say '-----------------';
-                take $pdir.child($meta6);
-            }
-
-            my $projects = @meta-files.map({ try { from-json(.IO.slurp) } }).grep(*.so);
-
-            my $projects-file = $dir.IO.child("{$econame}.json");
-            my $meta-json-str = to-json($projects);
-            $projects-file.IO.spurt: $meta-json-str;
-
-            git-push-ecosystem-update($projects-file, :remote-url($repo));
-        }
-        else {
-            wget($ecouri, $edir);
-            my @meta-files = $edir.IO.dir.grep(*.IO.f).grep(*.ends-with('.meta'));
-            my @projects = gather for @meta-files -> $file {
-                my $json = try { from-json($file.IO.slurp) };
-
-                if $json {
-                    # not part of s22 meta spec
-                    $json<original-source-type> = $json<source-type>:delete if $json<source-type>.?chars;
-                    $json<original-source-url> = $json<source-url>:delete if $json<source-url>.?chars;
-                    $json<source-type> = 'http';
-                    $json<source-url>  = $ecouri ~ $file.IO.basename.subst(/\.meta$/, '.tar.gz');
-
-                    # this is s22 meta spec and should be left in its original format
-                    $json<version> = $json<version_from_original_meta>:delete if $json<version_from_original_meta>.?chars;
-
-                    take $json;
-                }
-            }
-
-            my $meta-json-str = to-json(@projects);
-            $projects-file.IO.spurt: $meta-json-str;
-
-            git-push-ecosystem-update($projects-file, :remote-url($repo));
-        }
-    }
-}
-
-sub wget($uri, $to = $*CWD) {
-    try { so run 'wget', '-nc', '-nd', '-r', '--no-parent', '-A', '*.meta', $to, $uri, :env(%*ENV), :cwd($to) };
-}
-
-sub git-mangle-host($host) {
-    $host.subst("raw.githubusercontent", "github");
-}
-
-sub git-push-ecosystem-update($file, :$remote-url, :$remote = 'origin') {
-    if so run $GIT_CMD, 'add', $file, :cwd($file.IO.dirname) {
-        try { say run $GIT_CMD, 'commit', '-m', "'ecosystem update: {time}'", :cwd($file.IO.dirname) }
-        try { say say run $GIT_CMD, 'remote', 'set-url', $remote, $remote-url }
-        try { say run $GIT_CMD, 'push', $remote, 'master', :cwd($file.IO.dirname) }
-    }
-}
-
-sub git-update-or-create($uri, $dir, $meta6, Bool :$quiet) {
-    if $dir.child('.git').IO.e {
-        try { so run $GIT_CMD, 'pull', :cwd($dir); }
-    }
-    else {
-        try { so run $GIT_CMD, 'clone', $uri, $dir, :cwd($dir.IO.dirname) }
-        try { so run $GIT_CMD, 'checkout', :cwd($dir) }
+        $ecosystem.update-local-package-list();
+        $ecosystem.update-remote-package-list($remote-uri);
     }
 }
