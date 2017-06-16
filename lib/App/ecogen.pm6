@@ -7,7 +7,7 @@ sub from-json($text) { Rakudo::Internals::JSON.from-json($text) }
 sub to-json(|c)      { Rakudo::Internals::JSON.to-json(|c)      }
 
 sub powershell-webrequest($uri) {
-    state $probe = $*DISTRO.is-win && try { run('powershell', '--help', :out, :err).exitcode == 0 };
+    state $probe = $*DISTRO.is-win && try { shell('cmd /c powershell -help', :out, :err).exitcode == 0 };
     return Nil unless $probe;
     my $content = shell("cmd /c powershell -executionpolicy bypass -command (Invoke-WebRequest -UseBasicParsing -URI $uri).Content", :out).out.slurp-rest(:close);
     return $content;
