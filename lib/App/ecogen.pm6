@@ -6,18 +6,24 @@ sub from-json($text) { Rakudo::Internals::JSON.from-json($text) }
 
 sub to-json(|c)      { Rakudo::Internals::JSON.to-json(|c)      }
 
-# If I uncomment the code after the $probe assignment things lock up after around 10-20 requests
-sub wget($uri) {
-    state $probe = 0;#try { run('wget', '--help', :out, :err).exitcode == 0 };
+sub powershell-webrequest($uri) {
+    state $probe = $*DISTRO.is-win && try { run('powershell', '--help', :out, :err).exitcode == 0 };
     return Nil unless $probe;
-    my $content = run('wget', '--timeout=60', '-qO-', $uri, :out).out.slurp-rest(:close);
+    my $content = shell("cmd /c powershell -executionpolicy bypass -command (Invoke-WebRequest -UseBasicParsing -URI $uri).Content", :out).out.slurp-rest(:close);
     return $content;
 }
 
 sub curl($uri) {
-    state $probe = 1;#try { run('curl', '--help', :out, :err).exitcode == 0 };
+    state $probe = try { run('curl', '--help', :out, :err).exitcode == 0 };
     return Nil unless $probe;
     my $content = run('curl', '--max-time', 60, '-s', '-L', $uri, :out).out.slurp-rest(:close);
+    return $content;
+}
+
+sub wget($uri) {
+    state $probe = try { run('wget', '--help', :out, :err).exitcode == 0 };
+    return Nil unless $probe;
+    my $content = run('wget', '--timeout=60', '-qO-', $uri, :out).out.slurp-rest(:close);
     return $content;
 }
 
@@ -58,6 +64,6 @@ role Ecosystem {
     method slurp-http($uri) {
         sleep 1;
         say "Fetching $uri";
-        return wget($uri) // curl($uri);
+        return powershell-webrequest($uri) // curl($uri) // wget($uri);
     }
 }
