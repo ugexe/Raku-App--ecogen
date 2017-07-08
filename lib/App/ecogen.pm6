@@ -7,23 +7,23 @@ sub from-json($text) { Rakudo::Internals::JSON.from-json($text) }
 sub to-json(|c)      { Rakudo::Internals::JSON.to-json(|c)      }
 
 sub powershell-webrequest($uri) {
-    state $probe = $*DISTRO.is-win && try { shell('cmd /c powershell -help', :out, :err).exitcode == 0 };
+    state $probe = $*DISTRO.is-win && try { shell('cmd /c powershell -help', :!out, :!err).so };
     return Nil unless $probe;
-    my $content = shell("cmd /c powershell -executionpolicy bypass -command (Invoke-WebRequest -UseBasicParsing -URI $uri).Content", :out).out.slurp-rest(:close);
+    my $content = shell("cmd /c powershell -executionpolicy bypass -command (Invoke-WebRequest -UseBasicParsing -URI $uri).Content", :out).out.slurp(:close);
     return $content;
 }
 
 sub curl($uri) {
-    state $probe = try { run('curl', '--help', :out, :err).exitcode == 0 };
+    state $probe = try { run('curl', '--help', :!out, :!err).so };
     return Nil unless $probe;
-    my $content = run('curl', '--max-time', 60, '-s', '-L', $uri, :out).out.slurp-rest(:close);
+    my $content = run('curl', '--max-time', 60, '-s', '-L', $uri, :out).out.slurp(:close);
     return $content;
 }
 
 sub wget($uri) {
-    state $probe = try { run('wget', '--help', :out, :err).exitcode == 0 };
+    state $probe = try { run('wget', '--help', :!out, :!err).so };
     return Nil unless $probe;
-    my $content = run('wget', '--timeout=60', '-qO-', $uri, :out).out.slurp-rest(:close);
+    my $content = run('wget', '--timeout=60', '-qO-', $uri, :out).out.slurp(:close);
     return $content;
 }
 
