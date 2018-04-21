@@ -53,7 +53,12 @@ role Ecosystem {
         for <depends build-depends test-depends> {
             $meta{$_} = $meta{$_}.grep(*.defined).map({
                 $_ ~~ Hash ?? $_<name> !! $_
-            }).grep({$_ !~~ /':from'/}) if $meta{$_}:exists;
+            }).grep({$_ !~~ /':from'/}).Array if $meta{$_}:exists;
+        }
+
+        if $meta<builder>:exists {
+            $meta<build-depends> //= [];
+            $meta<build-depends>.push: "Distribution::Builder::$meta<builder>";
         }
     }
 
