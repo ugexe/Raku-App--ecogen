@@ -55,11 +55,6 @@ role Ecosystem {
                 $_ ~~ Hash ?? $_<name> !! $_
             }).grep({$_ !~~ /':from'/}).Array if $meta{$_}:exists;
         }
-
-        if $meta<builder>:exists {
-            $meta<build-depends> //= [];
-            $meta<build-depends>.push: "Distribution::Builder::$meta<builder>";
-        }
     }
 
     method update-local-package-list(@metas is copy = $.package-list) {
