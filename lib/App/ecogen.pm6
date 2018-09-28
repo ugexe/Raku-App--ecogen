@@ -2,9 +2,9 @@ class App::ecogen { }
 
 my $GIT_CMD = %*ENV<GIT_CMD> // 'git';
 
-sub from-json($text) { Rakudo::Internals::JSON.from-json($text) }
+sub from-json($text) { ::('Rakudo::Internals::JSON').from-json($text) }
 
-sub to-json(|c)      { Rakudo::Internals::JSON.to-json(|c)      }
+sub to-json(|c)      { ::('Rakudo::Internals::JSON').to-json(|c)      }
 
 sub powershell-webrequest($uri) {
     return Nil unless once { $*DISTRO.is-win && so try run('powershell', '-help', :!out, :!err) };
@@ -93,11 +93,9 @@ role Ecosystem {
 
         if so run $GIT_CMD, 'add', self.index-file.basename, :cwd(self.IO.parent) {
             try { so run $GIT_CMD, 'commit', '-m', "'ecosystem update: {time}'", :cwd(self.IO.parent) }
-	    #try { so run $GIT_CMD, 'push', 'origin', 'master', :cwd(self.IO.parent) }
         }
         if so run $GIT_CMD, 'add', self.index-file1.basename, :cwd(self.IO.parent) {
             try { so run $GIT_CMD, 'commit', '-m', "'ecosystem update: {time}'", :cwd(self.IO.parent) }
-	    #try { so run $GIT_CMD, 'push', 'origin', 'master', :cwd(self.IO.parent) }
         }
 
         try { so run $GIT_CMD, 'push', 'origin', 'master', :cwd(self.IO.parent) }
