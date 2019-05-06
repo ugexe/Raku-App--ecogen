@@ -18,7 +18,9 @@ multi MAIN(
 
         my $ecosystem = ::($ecosystem-module).new( :prefix($local-dir.child($econame)) );
 
-        $ecosystem.update-local-package-list()             if $local;
-        $ecosystem.update-remote-package-list($remote-uri) if $remote;
+        next() R, note("Ecosystem [$econame] failed to update its local package list")
+            if $local && not try $ecosystem.update-local-package-list();
+        next() R, note("Ecosystem [$econame] failed to update its remote package list")
+            if $remote && not try $ecosystem.update-remote-package-list($remote-uri);
     }
 }

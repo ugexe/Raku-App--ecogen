@@ -61,7 +61,7 @@ role Ecosystem {
         }
     }
 
-    method update-local-package-list(@metas is copy = $.package-list) {
+    method update-local-package-list(@metas is copy [$, *@] = $.package-list) {
         my $handle  = (self.index-file.absolute ~ ".tmp." ~ now.Int).IO.open(:w);
         my $handle1 = (self.index-file.absolute ~ "1.tmp." ~ now.Int).IO.open(:w);
         LEAVE { try $handle.close; try $handle.unlink; try $handle1.close; try $handle1.unlink; }
