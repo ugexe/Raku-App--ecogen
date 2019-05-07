@@ -17,7 +17,7 @@ class App::ecogen::cpan does Ecosystem {
                 $meta-list-uri, 'CPAN';
             my $indexing-proc = shell @command.join(' '), :out, :env(%*ENV);
             my $meta-uri-parts := $indexing-proc.out.slurp-rest(:close).lines.grep(*.ends-with('.meta'));
-            my @meta-uris = $meta-uri-parts.grep({ !$_.starts-with('id/P/PS/PSIXDISTS/') }).map({ "http://www.cpan.org/authors/$_" });
+            @meta-uris = $meta-uri-parts.grep({ !$_.starts-with('id/P/PS/PSIXDISTS/') }).map({ "http://www.cpan.org/authors/$_" });
             last;
             CATCH {
                 default {
