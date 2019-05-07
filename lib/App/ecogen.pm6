@@ -1,11 +1,8 @@
+use JSON::Fast;
 class App::ecogen { }
 
 my $GIT_CMD = %*ENV<GIT_CMD> // 'git';
 my $API_TOKEN = %*ENV<GITHUB_ACCESS_TOKEN> // '';
-
-sub from-json($text) { ::('Rakudo::Internals::JSON').from-json($text) }
-
-sub to-json(|c)      { ::('Rakudo::Internals::JSON').to-json(|c)      }
 
 sub powershell-webrequest($uri) {
     return Nil unless once { $*DISTRO.is-win && so try run('powershell', '-help', :!out, :!err) };
@@ -35,8 +32,9 @@ role Ecosystem {
     method index-file  { $.IO.parent.child("{self.IO.basename}.json") }
     method index-file1 { $.IO.parent.child("{self.IO.basename}1.json") }
 
+    has @!packages;
     method package-list(@meta-uris = $.meta-uris) {
-        state @packages =
+        return @!packages.elems ?? @!packages !! @!packages =
             grep { .defined },
             map  { try from-json($_) },
             map  { try self.slurp-http($_) },
@@ -68,9 +66,9 @@ role Ecosystem {
 
         .print("[\n") for $handle, $handle1;
         while @metas.shift -> $meta {
-            $handle1.print(~to-json($meta));
+            $handle1.print(~to-json($meta, :sorted-keys));
             self.downgrade-meta-format($meta);
-            $handle.print(~to-json($meta));
+            $handle.print(~to-json($meta, :sorted-keys));
             if @metas.elems {
                 .print("\n,\n") for $handle, $handle1;
             }

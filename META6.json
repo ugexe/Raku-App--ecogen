@@ -1,7 +1,7 @@
 {
     "perl"          : "6.c",
     "name"          : "App::ecogen",
-    "version"       : "0.0.6",
+    "version"       : "0.0.7",
     "auth"          : "github:ugexe",
     "authors"       : ["ugexe"],
     "license"       : "Artistic-2.0",
@@ -11,7 +11,7 @@
         "App::ecogen::p6c"  : "lib/App/ecogen/p6c.pm6",
         "App::ecogen::cpan" : "lib/App/ecogen/cpan.pm6"
     },
-    "depends"       : [ ],
+    "depends"       : [ "JSON::Fast" ],
     "test-depends"  : [ "Test" ],
     "build-depends" : [ ],
     "tags"          : [ "ecosystem", "meta6" ],
