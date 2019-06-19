@@ -1,11 +1,9 @@
 use v6;
 use Test;
+use JSON::Fast;
 use App::ecogen;
 plan 4;
 
-sub from-json($json) {
-    ::('Rakudo::Internals::JSON').from-json: $json
-}
 
 my $prefix = $*TMPDIR.child('app-ecogen');
 $prefix.mkdir;
