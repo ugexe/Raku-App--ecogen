@@ -1,6 +1,6 @@
 {
     "name"          : "App::ecogen",
-    "version"       : "0.0.8",
+    "version"       : "0.1.0",
     "auth"          : "github:ugexe",
     "authors"       : ["ugexe"],
     "license"       : "Artistic-2.0",
