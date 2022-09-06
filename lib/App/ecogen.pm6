@@ -6,7 +6,7 @@ my $API_TOKEN = %*ENV<GITHUB_ACCESS_TOKEN> // '';
 
 sub powershell-webrequest($uri) {
     return Nil unless once { $*DISTRO.is-win && so try run('powershell', '-help', :!out, :!err) };
-    my $header = $API_TOKEN.chars ?? ('-Headers @{"Authorization"="token ' ~ $API_TOKEN ~ '"}') !! '';
+    my $header = $API_TOKEN.chars ?? sprintf(q|-Headers @{Authorization = 'token %s'}|, $API_TOKEN) !! '';
     my $content = shell("cmd /c powershell -executionpolicy bypass -command (Invoke-WebRequest $header -UseBasicParsing -URI $uri).Content", :out).out.slurp(:close);
     return $content;
 }
