@@ -1,60 +1,98 @@
-use v6;
 use Test;
-use JSON::Fast;
-use App::ecogen;
-plan 4;
+plan 2;
 
+use App::ecogen;
+use JSON::Fast;
 
 my $prefix = $*TMPDIR.child('app-ecogen');
 $prefix.mkdir;
 
-my $meta = q/{
-    "meta-version": 1,
-    "name": "test",
-    "depends": [
-        "foo:from<native>",
-        "bar",
-        {
-            "name": "baz",
-            "hints": { }
-        }
-    ]
-}/;
 class App::ecogen::test does Ecosystem {
     has $.prefix;
+    has @.meta-data;
     method IO { self.prefix.IO }
     method meta-uris { }
-    method package-list(@meta-uris = []) {
-        [ from-json($meta) ]
+    method package-list(|) {
+        return @.meta-data
     }
 }
 
-App::ecogen::test.new(:prefix($prefix.child('test'))).update-local-package-list;
 
-is-deeply from-json(slurp($prefix.child('test1.json'))), from-json("[\n$meta\n]");
-is-deeply from-json(slurp($prefix.child('test.json'))), from-json(q/[{ "meta-version": 0, "name": "test", "depends": [ "bar", "baz" ] }]/);
+subtest 'array depends' => {
+    my $test-prefix     = $prefix.child('test-array');
+    my $test-json-path  = $prefix.child('test-array.json');
+    my $test-json-path1 = $prefix.child('test-array1.json');
 
-$meta = q/{
-    "meta-version": 1,
-    "name": "test",
-    "depends": {
-        "build": {
-            "requires": [
-                "foo:from<native>",
-                "bar",
-                {
-                    "name": "baz",
-                    "hints": { }
-                }
-            ]
-        }
+    my $meta-json = q/{
+        "meta-version": 1,
+        "name": "test-array",
+        "depends": [
+            "foo:from<native>",
+            "bar",
+            {
+                "name": "baz",
+                "hints": { }
+            }
+        ]
+    }/;
+    my @metas = (from-json($meta-json),);
+
+    my $app = App::ecogen::test.new(:prefix($test-prefix), :meta-data(@metas));
+    $app.update-local-package-list;
+
+    my $test-json  = from-json($test-json-path.slurp);
+    my $test-json1 = from-json($test-json-path1.slurp);
+
+    my @downgraded = do {
+        my @m = @metas.clone;
+        @m[0]<meta-version> = 0;
+        @m[0]<depends> = ["bar", "baz"];
+        @m;
     }
-}/;
 
-App::ecogen::test.new(:prefix($prefix.child('test'))).update-local-package-list;
+    is-deeply @metas, $test-json;
+    is-deeply @downgraded, $test-json;
+}
 
-is-deeply from-json(slurp($prefix.child('test1.json'))), from-json("[\n$meta\n]");
-is-deeply from-json(slurp($prefix.child('test.json'))), from-json(q/[{ "meta-version": 0, "name": "test", "build-depends": [ "bar", "baz" ] }]/);
+subtest 'hash depends' => {
+    my $test-prefix     = $prefix.child('test-hash');
+    my $test-json-path  = $prefix.child('test-hash.json');
+    my $test-json-path1 = $prefix.child('test-hash1.json');
+
+    my $meta-json = q/{
+        "meta-version": 1,
+        "name": "test-hash",
+        "depends": {
+            "build": {
+                "requires": [
+                    "foo:from<native>",
+                    "bar",
+                    {
+                        "name": "baz",
+                        "hints": { }
+                    }
+                ]
+            }
+        }
+    }/;
+    my @metas = (from-json($meta-json),);
+
+    my $app = App::ecogen::test.new(:prefix($test-prefix), :meta-data(@metas));
+    $app.update-local-package-list;
+
+    my $test-json  = from-json($test-json-path.slurp);
+    my $test-json1 = from-json($test-json-path1.slurp);
+
+    my @downgraded = do {
+        my @m = @metas.clone;
+        @m[0]<meta-version> = 0;
+        @m[0]<build-depends> = ["bar", "baz"];
+        @m;
+    }
+
+    is-deeply @metas, $test-json;
+    is-deeply @downgraded, $test-json;
+}
 
 END {
     if $prefix {
