@@ -3,7 +3,7 @@ use App::ecogen;
 
 class App::ecogen::p6c does Ecosystem {
     has $.prefix;
-    has $!meta-list-uri = 'https://raw.githubusercontent.com/perl6/ecosystem/master/META.list';
+    has $!meta-list-uri = 'https://raw.githubusercontent.com/raku/ecosystem/main/META.list';
 
     method IO { self.prefix.IO }
 
