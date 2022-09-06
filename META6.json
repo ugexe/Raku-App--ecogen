@@ -11,7 +11,7 @@
         "App::ecogen::cpan" : "lib/App/ecogen/cpan.rakumod"
     },
     "depends"       : [ "JSON::Fast" ],
-    "test-depends"  : [ "Test" ],
+    "test-depends"  : [ "Test:ver<6.c+>" ],
     "build-depends" : [ ],
     "tags"          : [ "ecosystem", "meta6" ],
     "support"       : {
