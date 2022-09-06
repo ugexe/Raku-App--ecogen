@@ -1,18 +1,14 @@
-=pod
-
-=encoding utf8
-
-=head2 App::ecogen
+## App::ecogen
 
 Generate an index from cpan and the p6c ecosystem
 
 See: https://github.com/ugexe/Perl6-ecosystems
 
-=head1 Installation
+## Installation
 
     $ zef install App::ecogen
 
-=head1 Usage
+## Usage
 
     # Create, save, and push cpan package index
     ecogen update cpan
@@ -22,5 +18,3 @@ See: https://github.com/ugexe/Perl6-ecosystems
 
     # Create, save, and push both cpan and p6c ecosystem package indexes
     ecogen update cpan p6c
-
-=cut
