@@ -4,7 +4,7 @@
 multi MAIN(
     'update',
     :$local-uri  = $*HOME.child('.ecogen').absolute,
-    :$remote-uri = "https://github.com:ugexe/Raku-ecosystems.git",
+    :$remote-uri = "https://github.com/ugexe/Raku-ecosystems.git",
     Bool :$local  = True,
     Bool :$remote = True,
     *@ecosystems ($, *@)
